@@ -86,5 +86,5 @@ class CallbackModule(object):
     def playbook_on_stats(self, stats):
         """Executed on PLAY RECAP."""
         self._record_last_task()
-        self.display_result('Palybook runtime', self.playbook_runtime)
+        self.display_result('Playbook runtime', self.playbook_runtime)
         self.display_results()
