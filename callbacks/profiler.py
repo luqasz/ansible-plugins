@@ -3,20 +3,24 @@
 
 from time import time as timer
 from collections import namedtuple
-from ansible.utils import display
+from ansible.plugins.callback import CallbackBase
 
 StartedTask = namedtuple('StartedTask', ('name', 'time'))
 
 
-class CallbackModule(object):
-
+class CallbackModule(CallbackBase):
     """Task and playbook profiling."""
 
     # How many tasks to display at the end.
-    top_tasks = 10
+    TOP_TASKS = 10
+    CALLBACK_VERSION = 2.0
+    CALLBACK_TYPE = 'aggregate'
+    CALLBACK_NAME = 'profiler'
+    CALLBACK_NEEDS_WHITELIST = True
 
     def __init__(self):
         """Record playbook start time."""
+        super(CallbackModule, self).__init__()
         self.playbook_start_time = None
         self.playbook_end_time = None
         self.recorded_tasks = list()
@@ -83,15 +87,18 @@ class CallbackModule(object):
     def display_result(self, name, elapsed):
         """Display nicelly formated result."""
         units = self.extract_time_units(elapsed)
-        display("{0:<65}{1:>14}".format(name, self.format_time(*units)))
+        self._display.display("{0:<65}{1:>14}".format(name, self.format_time(*units)))
 
     def display_results(self):
         """Display top n task results."""
-        display('Top {} tasks:'.format(self.top_tasks))
-        for name, elapsed in self.results[:self.top_tasks]:
+        self._display.display('Top {} tasks:'.format(self.TOP_TASKS))
+        for name, elapsed in self.results[:self.TOP_TASKS]:
             self.display_result(name, elapsed)
 
     def playbook_on_stats(self, stats):
+        self.v2_playbook_on_stats(stats)
+
+    def v2_playbook_on_stats(self, stats):
         """Executed on PLAY RECAP."""
         self.playbook_end_time = timer()
         self.display_result('Playbook runtime', (self.playbook_end_time - self.playbook_start_time))
